@@ -24,7 +24,7 @@ def process_challenge(request: AnalyzeChallengeRequest) -> ChallengeAnalysisResp
         return ChallengeAnalysisResponse(
             passed=False,
             confidence=confidence,
-            fail_reason=f"{challenge_type}_NOT_DETECTED",
+            fail_reason=f"{challenge_type.value}_NOT_DETECTED",
             best_frame=None
         )
 

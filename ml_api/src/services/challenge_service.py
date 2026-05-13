@@ -100,6 +100,8 @@ def _verify_blink(
     best_frame = None
     if scored:
         best_idx = max(scored, key=lambda x: x[1])[0]
+        # best_score = max(scored, key=lambda x: x[1])[1]
+        # logger.info(f"Best frame selected: index={best_idx} quality_score={round(best_score, 3)}")
         best_frame = frame_data[best_idx][0]
 
     return detected, round(confidence, 4), best_frame
@@ -113,25 +115,25 @@ def _verify_turn(
     Verify head turn happened across frames.
     direction: "LEFT" or "RIGHT"
 
-    TURN_LEFT: yaw goes negative
-    TURN_RIGHT: yaw goes positive
+    Uses nose deviation ratio relative to eye center.
+    TURN_LEFT: ratio goes negative (nose moves left of eye center)
+    TURN_RIGHT: ratio goes positive (nose moves right of eye center)
     """
     if len(frame_data) < settings.min_frames_per_challenge:
         return False, 0.0
 
-    yaws = [lm.yaw for _, lm in frame_data]
+    ratios = [lm.turn_ratio for _, lm in frame_data]
 
     if direction == "LEFT":
-        min_yaw = min(yaws)
-        detected = min_yaw < -settings.head_turn_min_degrees
-        delta = abs(min_yaw)
+        min_ratio = min(ratios)
+        detected = min_ratio < -settings.head_turn_min_ratio
+        delta = abs(min_ratio)
     else:
-        max_yaw = max(yaws)
-        detected = max_yaw > settings.head_turn_min_degrees
-        delta = abs(max_yaw)
+        max_ratio = max(ratios)
+        detected = max_ratio > settings.head_turn_min_ratio
+        delta = abs(max_ratio)
 
-    confidence = min(delta / settings.head_turn_min_degrees, 1.0) if detected else 0.0
-
+    confidence = min(delta / settings.head_turn_min_ratio, 1.0) if detected else 0.0
     return detected, round(confidence, 4)
 
 

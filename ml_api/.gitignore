@@ -4,3 +4,5 @@ __pycache__/
 .env
 .idea/
 *.iml
+/test_images/
+test_challenge.py

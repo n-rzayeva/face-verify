@@ -6,25 +6,19 @@ from typing import Optional
 
 
 # MediaPipe landmark indices
-# Left eye
 LEFT_EYE_TOP = 159
 LEFT_EYE_BOTTOM = 145
 LEFT_EYE_LEFT = 33
 LEFT_EYE_RIGHT = 133
 
-# Right eye
 RIGHT_EYE_TOP = 386
 RIGHT_EYE_BOTTOM = 374
 RIGHT_EYE_LEFT = 362
 RIGHT_EYE_RIGHT = 263
 
-# Head pose reference points
 NOSE_TIP = 1
-CHIN = 199
 LEFT_EYE_CORNER = 33
 RIGHT_EYE_CORNER = 263
-LEFT_MOUTH = 61
-RIGHT_MOUTH = 291
 
 
 @dataclass
@@ -35,9 +29,10 @@ class FrameLandmarks:
     avg_ear: float
     eyes_open: bool
 
-    # Head pose
-    yaw: float    # left/right rotation, negative = turned left
-    pitch: float  # up/down rotation, negative = looking up
+    # Head turn — nose deviation ratio
+    # 0.0 = centered, negative = turned left, positive = turned right
+    # range roughly -0.5 to 0.5 for significant turns
+    turn_ratio: float
 
     # Quality signals
     is_frontal: bool
@@ -73,19 +68,18 @@ class LandmarkExtractor:
         )
         avg_ear = (left_ear + right_ear) / 2.0
 
-        yaw, pitch = self._estimate_head_pose(landmarks, h, w)
+        turn_ratio = self._estimate_turn_ratio(landmarks)
 
         from config import settings
         eyes_open = avg_ear > settings.blink_ear_threshold
-        is_frontal = abs(yaw) < 15.0 and abs(pitch) < 15.0
+        is_frontal = abs(turn_ratio) < 0.1
 
         return FrameLandmarks(
             left_ear=left_ear,
             right_ear=right_ear,
             avg_ear=avg_ear,
             eyes_open=eyes_open,
-            yaw=yaw,
-            pitch=pitch,
+            turn_ratio=turn_ratio,
             is_frontal=is_frontal
         )
 
@@ -102,55 +96,24 @@ class LandmarkExtractor:
             return 0.0
         return vertical / horizontal
 
-    def _estimate_head_pose(self, landmarks, h: int, w: int):
-        def lm2d(idx):
-            p = landmarks.landmark[idx]
-            return np.array([p.x * w, p.y * h])
+    def _estimate_turn_ratio(self, landmarks) -> float:
+        """
+        Nose deviation ratio relative to eye center.
+        0.0 = centered
+        Negative = turned left
+        Positive = turned right
+        """
+        nose = landmarks.landmark[NOSE_TIP]
+        left_eye = landmarks.landmark[LEFT_EYE_CORNER]
+        right_eye = landmarks.landmark[RIGHT_EYE_CORNER]
 
-        model_points = np.array([
-            [0.0, 0.0, 0.0],
-            [0.0, -330.0, -65.0],
-            [-225.0, 170.0, -135.0],
-            [225.0, 170.0, -135.0],
-            [-150.0, -150.0, -125.0],
-            [150.0, -150.0, -125.0],
-        ], dtype=np.float64)
+        eye_center_x = (left_eye.x + right_eye.x) / 2
+        eye_width = abs(right_eye.x - left_eye.x)
 
-        image_points = np.array([
-            lm2d(NOSE_TIP),
-            lm2d(CHIN),
-            lm2d(LEFT_EYE_CORNER),
-            lm2d(RIGHT_EYE_CORNER),
-            lm2d(LEFT_MOUTH),
-            lm2d(RIGHT_MOUTH),
-        ], dtype=np.float64)
+        if eye_width == 0:
+            return 0.0
 
-        focal_length = w
-        camera_matrix = np.array([
-            [focal_length, 0, w / 2],
-            [0, focal_length, h / 2],
-            [0, 0, 1]
-        ], dtype=np.float64)
-
-        dist_coeffs = np.zeros((4, 1))
-
-        success, rotation_vec, _ = cv2.solvePnP(
-            model_points, image_points,
-            camera_matrix, dist_coeffs,
-            flags=cv2.SOLVEPNP_ITERATIVE
-        )
-
-        if not success:
-            return 0.0, 0.0
-
-        rotation_mat, _ = cv2.Rodrigues(rotation_vec)
-        yaw = float(np.degrees(np.arctan2(rotation_mat[1, 0], rotation_mat[0, 0])))
-        pitch = float(np.degrees(np.arctan2(
-            -rotation_mat[2, 0],
-            np.sqrt(rotation_mat[2, 1] ** 2 + rotation_mat[2, 2] ** 2)
-        )))
-
-        return yaw, pitch
+        return (nose.x - eye_center_x) / eye_width
 
 
 # Singleton
