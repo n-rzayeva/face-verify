@@ -1,0 +1,29 @@
+# Build outputs
+bin/
+obj/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+
+# JetBrains Rider
+*.sln.iml
+
+# Environment and secrets
+appsettings.Development.json
+*.pfx
+
+# Test photos
+**/TestPhotos/
+
+# dotnet tools
+.config/dotnet-tools.json
+
+# Logs
+*.log
+
+# temporary test files
+test_flow.py
+test_websocket.py

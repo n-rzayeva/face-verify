@@ -1,0 +1,6 @@
+@FaceVerify.Backend_HostAddress = http://localhost:5016
+
+GET {{FaceVerify.Backend_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
