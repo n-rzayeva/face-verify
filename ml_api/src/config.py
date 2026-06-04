@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     face_recognition_model: str = "buffalo_l"
 
     # Similarity
-    similarity_threshold: float = 0.75
+    similarity_threshold: float = 0.70
 
     # Challenge verification
     min_frames_per_challenge: int = 5      # minimum usable frames needed

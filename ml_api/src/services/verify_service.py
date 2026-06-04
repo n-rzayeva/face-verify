@@ -94,19 +94,37 @@ def _compute_liveness(
         eyes_score = 0.5
         frontal_score = 0.5
 
+    logger.info(f"Coverage: {face_data.coverage}")
+    logger.info(f"Blur: {blur}")
+    logger.info(f"Brightness: {brightness}")
+    logger.info(f"Blur score: {blur_score}")
+    logger.info(f"Brightness score: {brightness_score}")
+    logger.info(f"Coverage score: {coverage_score}")
+    logger.info(f"Challenge score: {challenge_score}")
+
     # Quality score = average of frame quality signals
     quality_score = (
-        blur_score * 0.35 +
-        brightness_score * 0.25 +
-        coverage_score * 0.20 +
-        eyes_score * 0.10 +
-        frontal_score * 0.10
+        coverage_score  * 0.40 +  # face size — most important
+        blur_score      * 0.25 +  # sharpness
+        brightness_score * 0.20 + # lighting
+        eyes_score      * 0.10 +  # eyes visible
+        frontal_score   * 0.05    # head angle
     )
 
     # Final liveness:
     # Challenge confidence carries more weight — it's the active proof
     # Quality is a supporting signal
-    liveness = (challenge_score * 0.65) + (quality_score * 0.35)
+    liveness = (challenge_score * 0.40) + (quality_score * 0.60)
+
+    logger.info(f"Coverage: {face_data.coverage}")
+    logger.info(f"Blur: {blur}")
+    logger.info(f"Brightness: {brightness}")
+    logger.info(f"Blur score: {blur_score}")
+    logger.info(f"Brightness score: {brightness_score}")
+    logger.info(f"Coverage score: {coverage_score}")
+    logger.info(f"Challenge score: {challenge_score}")
+    logger.info(f"Quality score: {quality_score}")
+    logger.info(f"Liveness: {liveness}")
 
     return round(liveness, 4)
 
