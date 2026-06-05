@@ -2,11 +2,10 @@ from pydantic import BaseModel
 from typing import Optional
 from schemas.photo import Photo
 
-
 class ChallengeAnalysisResponse(BaseModel):
     passed: bool
     confidence: float
-    fail_reason: Optional[str] = None
+    fail_reasons: list[str] = []
     best_frame: Optional[Photo] = None  # only returned for BLINK challenge
 
 

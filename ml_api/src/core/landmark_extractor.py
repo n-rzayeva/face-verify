@@ -3,6 +3,7 @@ import numpy as np
 import mediapipe as mp
 from dataclasses import dataclass
 from typing import Optional
+from config import settings
 
 
 # MediaPipe landmark indices
@@ -114,7 +115,34 @@ class LandmarkExtractor:
             return 0.0
 
         return (nose.x - eye_center_x) / eye_width
+    
+    def compute_from_raw(self, raw_landmarks, h: int, w: int) -> FrameLandmarks:
+        """
+        Compute FrameLandmarks from already-extracted MediaPipe landmarks.
+        Use this when you've already run FaceMesh and have the raw result.
+        """
 
+        left_ear = self._eye_aspect_ratio(
+            raw_landmarks, LEFT_EYE_TOP, LEFT_EYE_BOTTOM,
+            LEFT_EYE_LEFT, LEFT_EYE_RIGHT, h, w
+        )
+        right_ear = self._eye_aspect_ratio(
+            raw_landmarks, RIGHT_EYE_TOP, RIGHT_EYE_BOTTOM,
+            RIGHT_EYE_LEFT, RIGHT_EYE_RIGHT, h, w
+        )
+        avg_ear = (left_ear + right_ear) / 2.0
+        turn_ratio = self._estimate_turn_ratio(raw_landmarks)
+        eyes_open = avg_ear > settings.blink_ear_threshold
+        is_frontal = abs(turn_ratio) < 0.1
+
+        return FrameLandmarks(
+            left_ear=left_ear,
+            right_ear=right_ear,
+            avg_ear=avg_ear,
+            eyes_open=eyes_open,
+            turn_ratio=turn_ratio,
+            is_frontal=is_frontal
+        )
 
 # Singleton
 extractor = LandmarkExtractor()

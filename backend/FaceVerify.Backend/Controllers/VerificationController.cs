@@ -25,10 +25,12 @@ public class CompleteRequest
 public class VerificationController : ControllerBase
 {
     private readonly VerificationService _verificationService;
+    private readonly JwtService _jwtService;
 
-    public VerificationController(VerificationService verificationService)
+    public VerificationController(VerificationService verificationService, JwtService jwtService)
     {
         _verificationService = verificationService;
+        _jwtService = jwtService;
     }
 
     [HttpPost("start")]
@@ -38,11 +40,12 @@ public class VerificationController : ControllerBase
             return BadRequest(new { error = "user_id is required." });
 
         var token = _verificationService.Start(request.UserId);
+        var session = _jwtService.ValidateAndExtract(token);
 
         return Ok(new
         {
             token,
-            challenges = new[] { "BLINK", "TURN_LEFT", "TURN_RIGHT" }
+            challenges = session!.Challenges
         });
     }
 
@@ -58,7 +61,7 @@ public class VerificationController : ControllerBase
         if (request.Frames is null || request.Frames.Count == 0)
             return BadRequest(new { error = "frames are required." });
 
-        var (passed, failReason, nextChallenge, allComplete, newToken) =
+        var (passed, failReasons, nextChallenge, allComplete, newToken) =
             await _verificationService.ProcessChallengeAsync(
                 request.Token,
                 request.ChallengeType,
@@ -69,7 +72,7 @@ public class VerificationController : ControllerBase
             return Ok(new
             {
                 passed = false,
-                fail_reason = failReason,
+                fail_reasons = failReasons,
                 next_challenge = (string?)null,
                 all_complete = false,
                 token = newToken
@@ -78,7 +81,7 @@ public class VerificationController : ControllerBase
         return Ok(new
         {
             passed = true,
-            fail_reason = (string?)null,
+            fail_reasons = new List<string>(),
             next_challenge = nextChallenge,
             all_complete = allComplete,
             token = newToken

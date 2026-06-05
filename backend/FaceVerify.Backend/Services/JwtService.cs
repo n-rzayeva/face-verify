@@ -32,7 +32,6 @@ public class JwtService
             new Claim("challenges", JsonSerializer.Serialize(session.Challenges)),
             new Claim("completed", JsonSerializer.Serialize(session.Completed)),
             new Claim("attempt_counts", JsonSerializer.Serialize(session.AttemptCounts)),
-            new Claim("challenge_confidences", JsonSerializer.Serialize(session.ChallengeConfidences)),
         };
 
         var token = new JwtSecurityToken(
@@ -72,8 +71,6 @@ public class JwtService
                     jwt.Claims.First(c => c.Type == "completed").Value)!,
                 AttemptCounts = JsonSerializer.Deserialize<Dictionary<string, int>>(
                     jwt.Claims.First(c => c.Type == "attempt_counts").Value)!,
-                ChallengeConfidences = JsonSerializer.Deserialize<Dictionary<string, float>>(
-                    jwt.Claims.First(c => c.Type == "challenge_confidences").Value)!,
             };
         }
         catch

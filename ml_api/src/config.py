@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     # Face recognition model (InsightFace)
     face_recognition_model: str = "buffalo_l"
 
+    # Liveness model (MiniFASNetV2)
+    liveness_model_path: str = "anti_spoof_models/2.7_80x80_MiniFASNetV2.pth"
+    liveness_mean: list[float] = [0.5, 0.5, 0.5]
+    liveness_std: list[float] = [0.5, 0.5, 0.5]
+
     # Similarity
     similarity_threshold: float = 0.70
 

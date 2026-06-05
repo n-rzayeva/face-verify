@@ -10,4 +10,3 @@ class AnalyzeChallengeRequest(BaseModel):
 class AnalyzeMatchRequest(BaseModel):
     best_frame: Photo
     id_photo: Photo
-    challenge_confidences: dict[str, float]

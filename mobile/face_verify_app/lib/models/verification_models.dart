@@ -14,14 +14,14 @@ class StartResponse {
 
 class ChallengeResponse {
   final bool passed;
-  final String? failReason;
+  final List<String> failReasons;
   final String? nextChallenge;
   final bool allComplete;
   final String token;
 
   ChallengeResponse({
     required this.passed,
-    this.failReason,
+    this.failReasons = const [],
     this.nextChallenge,
     required this.allComplete,
     required this.token,
@@ -30,7 +30,7 @@ class ChallengeResponse {
   factory ChallengeResponse.fromJson(Map<String, dynamic> json) {
     return ChallengeResponse(
       passed: json['passed'],
-      failReason: json['fail_reason'],
+      failReasons: List<String>.from(json['fail_reasons'] ?? []),
       nextChallenge: json['next_challenge'],
       allComplete: json['all_complete'],
       token: json['token'],

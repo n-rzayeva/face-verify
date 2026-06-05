@@ -56,6 +56,19 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     });
   }
 
+  String _failMessage(List<String> reasons) {
+    if (reasons.isEmpty) return 'Not detected clearly, try again.';
+    const messages = {
+      'BLURRY': 'Please hold your phone steady.',
+      'POOR_LIGHTING': 'Please find better lighting.',
+      'FACE_NOT_DETECTED': 'No face detected. Look directly at the camera.',
+      'FACE_TOO_FAR': 'Please move closer to the camera.',
+      'FACE_OBSCURED': 'Your face is partially covered.',
+      'ACTION_NOT_DETECTED': 'Action not detected. Please try again.',
+    };
+    return messages[reasons.first] ?? 'Please try again.';
+  }
+
   Future<void> _initCamera() async {
     await Permission.camera.request();
     final cameras = await availableCameras();
@@ -120,13 +133,12 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
         frames,
       );
 
-      debugPrint('Response: passed=${response.passed}, failReason=${response.failReason}');
+      debugPrint('Response: passed=${response.passed}, failReasons=${response.failReasons}');
 
       _token = response.token;
 
       if (!response.passed) {
-        if (response.failReason == 'MAX_ATTEMPTS_EXCEEDED') {
-          // Navigate to result screen with failure
+        if (response.failReasons.contains('MAX_ATTEMPTS_EXCEEDED')) {
           if (!mounted) return;
           Navigator.pushReplacement(
             context,
@@ -143,8 +155,10 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
           );
           return;
         }
+
+        final message = _failMessage(response.failReasons);
         _updateGuidance();
-        setState(() => _guidance = '$_guidance\n(Not detected clearly, try again)');
+        setState(() => _guidance = '$_guidance\n$message');
         return;
       }
 

@@ -24,7 +24,7 @@ public class AnalyzeChallengeResponse
 {
     public bool Passed { get; set; }
     public float Confidence { get; set; }
-    public string? FailReason { get; set; }
+    public List<string> FailReasons { get; set; } = new();
     public PhotoDto? BestFrame { get; set; }
 }
 
@@ -32,7 +32,6 @@ public class AnalyzeMatchRequest
 {
     public PhotoDto BestFrame { get; set; } = new();
     public PhotoDto IdPhoto { get; set; } = new();
-    public Dictionary<string, float> ChallengeConfidences { get; set; } = new();
 }
 
 public class AnalyzeMatchResponse
@@ -72,16 +71,13 @@ public class MlApiService
 
     public async Task<AnalyzeMatchResponse?> AnalyzeMatchAsync(
         PhotoDto bestFrame,
-        PhotoDto idPhoto,
-        Dictionary<string, float> challengeConfidences)
+        PhotoDto idPhoto)
     {
         var request = new AnalyzeMatchRequest
         {
             BestFrame = bestFrame,
-            IdPhoto = idPhoto,
-            ChallengeConfidences = challengeConfidences
-        };
-
+            IdPhoto = idPhoto
+        };        
         var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
         var response = await _httpClient.PostAsJsonAsync("/api/analyze/match", request, options);
         response.EnsureSuccessStatusCode();
