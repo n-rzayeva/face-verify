@@ -44,17 +44,15 @@ public class VerificationService
     }
 
     public async Task<(bool passed, List<string> failReasons, string? nextChallenge, bool allComplete, string token)>
-        ProcessChallengeAsync(string token, string challengeType, List<PhotoDto> frames)
+        ProcessChallengeAsync(string token, List<PhotoDto> frames)
     {
         var session = _jwtService.ValidateAndExtract(token);
         if (session is null)
             return (false, new List<string> { "INVALID_OR_EXPIRED_TOKEN" }, null, false, token);
 
-        if (!session.Challenges.Contains(challengeType))
-            return (false, new List<string> { "INVALID_CHALLENGE" }, null, false, token);
-
-        if (session.Completed.Contains(challengeType))
-            return (false, new List<string> { "CHALLENGE_ALREADY_COMPLETED" }, null, false, token);
+        var challengeType = session.Challenges.FirstOrDefault(c => !session.Completed.Contains(c));
+        if (challengeType is null)
+            return (false, new List<string> { "ALL_CHALLENGES_ALREADY_COMPLETED" }, null, false, token);
 
         var maxAttempts = int.Parse(_configuration["Verification:MaxAttemptsPerChallenge"]!);
         session.AttemptCounts[challengeType]++;

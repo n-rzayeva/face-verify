@@ -11,7 +11,6 @@ public class StartRequest
 public class ChallengeRequest
 {
     public string Token { get; set; } = string.Empty;
-    public string ChallengeType { get; set; } = string.Empty;
     public List<PhotoDto> Frames { get; set; } = new();
 }
 
@@ -54,17 +53,12 @@ public class VerificationController : ControllerBase
     {
         if (string.IsNullOrEmpty(request.Token))
             return BadRequest(new { error = "token is required." });
-
-        if (string.IsNullOrEmpty(request.ChallengeType))
-            return BadRequest(new { error = "challenge_type is required." });
-
         if (request.Frames is null || request.Frames.Count == 0)
             return BadRequest(new { error = "frames are required." });
 
         var (passed, failReasons, nextChallenge, allComplete, newToken) =
             await _verificationService.ProcessChallengeAsync(
                 request.Token,
-                request.ChallengeType,
                 request.Frames
             );
 

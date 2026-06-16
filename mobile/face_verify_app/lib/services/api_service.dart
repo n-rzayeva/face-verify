@@ -23,7 +23,6 @@ class ApiService {
 
   static Future<ChallengeResponse> submitChallenge(
     String token,
-    String challengeType,
     List<File> frames,
   ) async {
     final encodedFrames = await Future.wait(
@@ -31,7 +30,7 @@ class ApiService {
         final bytes = await f.readAsBytes();
         return {
           'base64': base64Encode(bytes),
-          'label': challengeType.toLowerCase(),
+          'label': 'frame',
         };
       }),
     );
@@ -41,7 +40,6 @@ class ApiService {
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'token': token,
-        'challengeType': challengeType,
         'frames': encodedFrames,
       }),
     ).timeout(const Duration(seconds: 60));

@@ -129,7 +129,6 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     try {
       final response = await ApiService.submitChallenge(
         _token,
-        _currentChallenge,
         frames,
       );
 
