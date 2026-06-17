@@ -37,6 +37,8 @@ class Settings(BaseSettings):
     blink_ear_threshold: float = 0.21      # below = eye closed
     blink_closed_frames: int = 1           # minimum closed frames for valid blink
     head_turn_min_ratio: float = 0.15      # nose deviation ratio for turn detection
+    smile_mar_threshold: float = 0.35      # needs calibration
+    smile_min_frames: int = 3              # minimum frames showing smile for valid detection
 
     class Config:
         env_file = ".env"

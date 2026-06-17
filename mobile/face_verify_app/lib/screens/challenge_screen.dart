@@ -147,6 +147,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                   passed: false,
                   similarityScore: 0,
                   livenessScore: 0,
+                  livenessLabel: 'UNKNOWN',
                   failReason: 'Max attempts exceeded for $_currentChallenge',
                 ),
               ),

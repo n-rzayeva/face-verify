@@ -40,6 +40,20 @@ class ResultScreen extends StatelessWidget {
               label: 'Liveness Score',
               value: response.livenessScore,
             ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Liveness Label', style: TextStyle(fontSize: 16)),
+                Text(
+                  response.livenessLabel,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
             if (response.failReason != null) ...[
               const SizedBox(height: 24),
               Text(

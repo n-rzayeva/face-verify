@@ -38,6 +38,7 @@ public class AnalyzeMatchResponse
 {
     public float SimilarityScore { get; set; }
     public float LivenessScore { get; set; }
+    public string LivenessLabel { get; set; } = string.Empty;
 }
 
 public class MlApiService

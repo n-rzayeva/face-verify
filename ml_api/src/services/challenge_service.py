@@ -141,7 +141,6 @@ def _score_frame_quality(image: np.ndarray, landmarks: FrameLandmarks) -> float:
 def _verify_blink(
     frame_data: list[tuple[np.ndarray, FrameLandmarks, object]]
 ) -> tuple[bool, float, Optional[np.ndarray]]:
-    """Verify blink happened across frames."""
     if len(frame_data) < settings.min_frames_per_challenge:
         return False, 0.0, None
 
@@ -190,7 +189,6 @@ def _verify_turn(
     frame_data: list[tuple[np.ndarray, FrameLandmarks, object]],
     direction: str
 ) -> tuple[bool, float]:
-    """Verify head turn happened across frames."""
     if len(frame_data) < settings.min_frames_per_challenge:
         return False, 0.0
 
@@ -206,6 +204,26 @@ def _verify_turn(
         delta = abs(max_ratio)
 
     confidence = min(delta / settings.head_turn_min_ratio, 1.0) if detected else 0.0
+    return detected, round(confidence, 4)
+
+
+def _verify_smile(
+    frame_data: list[tuple[np.ndarray, FrameLandmarks, object]]
+) -> tuple[bool, float]:
+    """
+    Verify smile happened across frames.
+    Smile is a sustained state, not a transition — detected when MAR
+    exceeds the threshold for at least smile_min_frames frames.
+    """
+    if len(frame_data) < settings.min_frames_per_challenge:
+        return False, 0.0
+
+    mars = [lm.mar for _, lm, _ in frame_data]
+    smiling_frames = sum(1 for mar in mars if mar > settings.smile_mar_threshold)
+
+    detected = smiling_frames >= settings.smile_min_frames
+    confidence = min(smiling_frames / settings.smile_min_frames, 1.0) if detected else 0.0
+
     return detected, round(confidence, 4)
 
 
@@ -269,6 +287,16 @@ def verify(
             if not reasons:
                 reasons = ["ACTION_NOT_DETECTED"]
             logger.info(f"TURN_RIGHT failed — reasons={reasons}")
+            return False, confidence, None, reasons
+        return True, confidence, None, []
+
+    elif challenge_type == ChallengeType.SMILE:
+        detected, confidence = _verify_smile(frame_data)
+        if not detected:
+            reasons = _analyse_quality(frames, frame_data, no_face_count, is_blink)
+            if not reasons:
+                reasons = ["ACTION_NOT_DETECTED"]
+            logger.info(f"SMILE failed — reasons={reasons}")
             return False, confidence, None, reasons
         return True, confidence, None, []
 

@@ -42,12 +42,14 @@ class CompleteResponse {
   final bool passed;
   final double similarityScore;
   final double livenessScore;
+  final String livenessLabel;
   final String? failReason;
 
   CompleteResponse({
     required this.passed,
     required this.similarityScore,
     required this.livenessScore,
+    required this.livenessLabel,
     this.failReason,
   });
 
@@ -56,6 +58,7 @@ class CompleteResponse {
       passed: json['passed'],
       similarityScore: (json['similarity_score'] as num).toDouble(),
       livenessScore: (json['liveness_score'] as num).toDouble(),
+      livenessLabel: json['liveness_label'] ?? '',
       failReason: json['fail_reason'],
     );
   }

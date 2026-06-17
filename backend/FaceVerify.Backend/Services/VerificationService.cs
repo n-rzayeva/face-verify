@@ -94,23 +94,23 @@ public class VerificationService
         return (true, new List<string>(), next, allComplete, newToken);
     }
 
-    public async Task<(bool passed, float similarityScore, float livenessScore, string? failReason)>
+    public async Task<(bool passed, float similarityScore, float livenessScore, string livenessLabel, string? failReason)>
         CompleteAsync(string token)
     {
         var session = _jwtService.ValidateAndExtract(token);
         if (session is null)
-            return (false, 0, 0, "INVALID_OR_EXPIRED_TOKEN");
+            return (false, 0, 0, "", "INVALID_OR_EXPIRED_TOKEN");
 
         if (!session.Challenges.All(c => session.Completed.Contains(c)))
-            return (false, 0, 0, "NOT_ALL_CHALLENGES_COMPLETED");
+            return (false, 0, 0, "", "NOT_ALL_CHALLENGES_COMPLETED");
 
         var frame = await _dbContext.VerificationFrames.FindAsync(Guid.Parse(session.SessionId));
         if (frame is null || frame.ExpiresAt < DateTime.UtcNow)
-            return (false, 0, 0, "SESSION_EXPIRED");
+            return (false, 0, 0, "", "SESSION_EXPIRED");
 
         var idPhoto = LoadIdPhoto(session.UserId);
         if (idPhoto is null)
-            return (false, 0, 0, "ID_PHOTO_NOT_FOUND");
+            return (false, 0, 0, "", "ID_PHOTO_NOT_FOUND");
 
         var matchResult = await _mlApiService.AnalyzeMatchAsync(
             new PhotoDto { Base64 = frame.BestFrame, Label = "best_frame" },
@@ -118,7 +118,7 @@ public class VerificationService
         );
 
         if (matchResult is null)
-            return (false, 0, 0, "ML_API_ERROR");
+            return (false, 0, 0, "", "ML_API_ERROR");
 
         _dbContext.VerificationFrames.Remove(frame);
         await _dbContext.SaveChangesAsync();
@@ -126,7 +126,7 @@ public class VerificationService
         var passed = matchResult.SimilarityScore >= float.Parse(
             _configuration["Verification:SimilarityThreshold"] ?? "0.75");
 
-        return (passed, matchResult.SimilarityScore, matchResult.LivenessScore, null);
+        return (passed, matchResult.SimilarityScore, matchResult.LivenessScore, matchResult.LivenessLabel, null);
     }
 
     private string? LoadIdPhoto(string userId)

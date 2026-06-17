@@ -21,6 +21,12 @@ NOSE_TIP = 1
 LEFT_EYE_CORNER = 33
 RIGHT_EYE_CORNER = 263
 
+# Mouth landmarks for smile detection
+MOUTH_TOP = 13
+MOUTH_BOTTOM = 14
+MOUTH_LEFT = 61
+MOUTH_RIGHT = 291
+
 
 @dataclass
 class FrameLandmarks:
@@ -34,7 +40,9 @@ class FrameLandmarks:
     # 0.0 = centered, negative = turned left, positive = turned right
     # range roughly -0.5 to 0.5 for significant turns
     turn_ratio: float
-
+    # Mouth aspect ratio — smile detection
+    mar: float
+    smiling: bool
     # Quality signals
     is_frontal: bool
 
@@ -58,22 +66,28 @@ class LandmarkExtractor:
 
         landmarks = results.multi_face_landmarks[0]
         h, w = image.shape[:2]
+        return self.compute_from_raw(landmarks, h, w)
 
+    def compute_from_raw(self, raw_landmarks, h: int, w: int) -> FrameLandmarks:
+        """
+        Compute FrameLandmarks from already-extracted MediaPipe landmarks.
+        Use this when you've already run FaceMesh and have the raw result.
+        """
         left_ear = self._eye_aspect_ratio(
-            landmarks, LEFT_EYE_TOP, LEFT_EYE_BOTTOM,
+            raw_landmarks, LEFT_EYE_TOP, LEFT_EYE_BOTTOM,
             LEFT_EYE_LEFT, LEFT_EYE_RIGHT, h, w
         )
         right_ear = self._eye_aspect_ratio(
-            landmarks, RIGHT_EYE_TOP, RIGHT_EYE_BOTTOM,
+            raw_landmarks, RIGHT_EYE_TOP, RIGHT_EYE_BOTTOM,
             RIGHT_EYE_LEFT, RIGHT_EYE_RIGHT, h, w
         )
         avg_ear = (left_ear + right_ear) / 2.0
+        turn_ratio = self._estimate_turn_ratio(raw_landmarks)
+        mar = self._mouth_aspect_ratio(raw_landmarks, h, w)
 
-        turn_ratio = self._estimate_turn_ratio(landmarks)
-
-        from config import settings
         eyes_open = avg_ear > settings.blink_ear_threshold
-        is_frontal = abs(turn_ratio) < 0.1
+        is_frontal = abs(turn_ratio) < settings.frontal_turn_ratio_threshold
+        smiling = mar > settings.smile_mar_threshold
 
         return FrameLandmarks(
             left_ear=left_ear,
@@ -81,6 +95,8 @@ class LandmarkExtractor:
             avg_ear=avg_ear,
             eyes_open=eyes_open,
             turn_ratio=turn_ratio,
+            mar=mar,
+            smiling=smiling,
             is_frontal=is_frontal
         )
 
@@ -92,6 +108,21 @@ class LandmarkExtractor:
 
         vertical = np.linalg.norm(lm(top) - lm(bottom))
         horizontal = np.linalg.norm(lm(left) - lm(right))
+
+        if horizontal == 0:
+            return 0.0
+        return vertical / horizontal
+
+    def _mouth_aspect_ratio(self, landmarks, h: int, w: int) -> float:
+        """
+        Mouth Aspect Ratio: vertical mouth opening / horizontal mouth width.
+        Higher MAR = mouth more open (smiling showing teeth).
+        """
+        def lm(idx):
+            p = landmarks.landmark[idx]
+            return np.array([p.x * w, p.y * h])
+        vertical = np.linalg.norm(lm(MOUTH_TOP) - lm(MOUTH_BOTTOM))
+        horizontal = np.linalg.norm(lm(MOUTH_LEFT) - lm(MOUTH_RIGHT))
 
         if horizontal == 0:
             return 0.0
@@ -115,34 +146,7 @@ class LandmarkExtractor:
             return 0.0
 
         return (nose.x - eye_center_x) / eye_width
-    
-    def compute_from_raw(self, raw_landmarks, h: int, w: int) -> FrameLandmarks:
-        """
-        Compute FrameLandmarks from already-extracted MediaPipe landmarks.
-        Use this when you've already run FaceMesh and have the raw result.
-        """
 
-        left_ear = self._eye_aspect_ratio(
-            raw_landmarks, LEFT_EYE_TOP, LEFT_EYE_BOTTOM,
-            LEFT_EYE_LEFT, LEFT_EYE_RIGHT, h, w
-        )
-        right_ear = self._eye_aspect_ratio(
-            raw_landmarks, RIGHT_EYE_TOP, RIGHT_EYE_BOTTOM,
-            RIGHT_EYE_LEFT, RIGHT_EYE_RIGHT, h, w
-        )
-        avg_ear = (left_ear + right_ear) / 2.0
-        turn_ratio = self._estimate_turn_ratio(raw_landmarks)
-        eyes_open = avg_ear > settings.blink_ear_threshold
-        is_frontal = abs(turn_ratio) < settings.frontal_turn_ratio_threshold
-
-        return FrameLandmarks(
-            left_ear=left_ear,
-            right_ear=right_ear,
-            avg_ear=avg_ear,
-            eyes_open=eyes_open,
-            turn_ratio=turn_ratio,
-            is_frontal=is_frontal
-        )
 
 # Singleton
 extractor = LandmarkExtractor()

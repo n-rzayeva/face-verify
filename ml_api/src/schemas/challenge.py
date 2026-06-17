@@ -7,6 +7,7 @@ class ChallengeType(str, Enum):
     BLINK = "BLINK"
     TURN_LEFT = "TURN_LEFT"
     TURN_RIGHT = "TURN_RIGHT"
+    SMILE = "SMILE"
 
 
 class ChallengeFrames(BaseModel):

@@ -88,7 +88,7 @@ public class VerificationController : ControllerBase
         if (string.IsNullOrEmpty(request.Token))
             return BadRequest(new { error = "token is required." });
 
-        var (passed, similarityScore, livenessScore, failReason) =
+        var (passed, similarityScore, livenessScore, livenessLabel, failReason) =
             await _verificationService.CompleteAsync(request.Token);
 
         if (!passed && failReason is not null)
@@ -97,7 +97,8 @@ public class VerificationController : ControllerBase
                 passed = false,
                 fail_reason = failReason,
                 similarity_score = 0f,
-                liveness_score = 0f
+                liveness_score = 0f,
+                liveness_label = ""
             });
 
         return Ok(new
@@ -105,7 +106,8 @@ public class VerificationController : ControllerBase
             passed,
             fail_reason = (string?)null,
             similarity_score = similarityScore,
-            liveness_score = livenessScore
+            liveness_score = livenessScore,
+            liveness_label = livenessLabel
         });
     }
 }
