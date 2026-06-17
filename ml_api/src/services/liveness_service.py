@@ -1,4 +1,5 @@
 import logging
+from dataclasses import dataclass
 import numpy as np
 import cv2
 import torch
@@ -8,18 +9,29 @@ from config import settings
 
 logger = logging.getLogger(__name__)
 
+_CLASS_NAMES = {0: "SPOOF", 1: "UNKNOWN", 2: "REAL"}
 
-def score(image: np.ndarray, face_data: FaceData) -> float:
+
+@dataclass
+class LivenessResult:
+    score: float   # confidence in the predicted label
+    label: str     # "SPOOF", "UNKNOWN", or "REAL"
+
+
+def score(image: np.ndarray, face_data: FaceData) -> LivenessResult:
     """
-    Passive liveness score using MiniFASNetV2.
-    Returns probability that the face is real (class index 2).
-    Range: 0.0 - 1.0
+    Passive liveness check using MiniFASNetV2.
+
+    The model outputs 3 classes (spoof, unknown, real). Rather than applying
+    an additional manual threshold on top of the model's output, we trust
+    the model's own classification decision (argmax) and report the
+    confidence in that decision.
     """
     try:
         x1, y1, x2, y2 = face_data.bbox
         face_crop = image[y1:y2, x1:x2]
         if face_crop.size == 0:
-            return 0.0
+            return LivenessResult(score=0.0, label="SPOOF")
 
         face_resized = cv2.resize(face_crop, (80, 80))
         face_rgb = cv2.cvtColor(face_resized, cv2.COLOR_BGR2RGB)
@@ -34,10 +46,14 @@ def score(image: np.ndarray, face_data: FaceData) -> float:
         with torch.no_grad():
             output = registry.liveness_model(face_tensor)
             probabilities = torch.softmax(output, dim=1)
-            liveness_prob = float(probabilities[0][2])  # index 2 = real class
+            label_idx = int(torch.argmax(probabilities, dim=1).item())
+            confidence = float(probabilities[0][label_idx])
 
-        return round(liveness_prob, 4)
+        label = _CLASS_NAMES[label_idx]
+        logger.info(f"Liveness check — label={label} confidence={round(confidence, 4)}")
+
+        return LivenessResult(score=round(confidence, 4), label=label)
 
     except Exception as e:
         logger.warning(f"Liveness scoring failed: {e}")
-        return 0.0
+        return LivenessResult(score=0.0, label="SPOOF")

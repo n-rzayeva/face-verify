@@ -48,9 +48,13 @@ def process_match(request: AnalyzeMatchRequest) -> MatchResponse:
     similarity = similarity_service.compare(id_photo_face, best_frame_face)
     liveness = liveness_service.score(best_frame_image, best_frame_face)
 
-    logger.info(f"Match complete — similarity={similarity} liveness={liveness}")
+    logger.info(
+        f"Match complete — similarity={similarity} "
+        f"liveness_label={liveness.label} liveness_score={liveness.score}"
+    )
 
     return MatchResponse(
         similarity_score=similarity,
-        liveness_score=liveness
+        liveness_score=liveness.score,
+        liveness_label=liveness.label
     )

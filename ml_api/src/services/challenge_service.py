@@ -102,7 +102,7 @@ def _analyse_quality(
             left_eye = raw_landmarks.landmark[33]
             right_eye = raw_landmarks.landmark[263]
             eye_distance = abs(right_eye.x - left_eye.x)
-            if eye_distance < 0.08:
+            if eye_distance < settings.eye_distance_threshold:
                 face_too_far += 1
 
             # Occlusion: average visibility of key landmarks
@@ -110,7 +110,7 @@ def _analyse_quality(
                 raw_landmarks.landmark[i].visibility
                 for i in _KEY_LANDMARK_INDICES
             ) / len(_KEY_LANDMARK_INDICES)
-            if visibility < 0.6:
+            if visibility < settings.visibility_threshold:
                 face_obscured += 1
 
     reasons = []

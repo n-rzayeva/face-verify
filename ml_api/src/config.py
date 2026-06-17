@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     # Face detection
     min_face_coverage: float = 0.10
     face_detection_size: int = 640
+    eye_distance_threshold: float = 0.08   # normalized eye distance — below = face too far
+    visibility_threshold: float = 0.6      # landmark visibility — below = face obscured
+    frontal_turn_ratio_threshold: float = 0.1   # abs(turn_ratio) below this = frontal
 
     # Face recognition model (InsightFace)
     face_recognition_model: str = "buffalo_l"

@@ -11,4 +11,5 @@ class ChallengeAnalysisResponse(BaseModel):
 
 class MatchResponse(BaseModel):
     similarity_score: float
-    liveness_score: float
+    liveness_score: float        # confidence in the predicted label
+    liveness_label: str          # "SPOOF", "UNKNOWN", or "REAL"

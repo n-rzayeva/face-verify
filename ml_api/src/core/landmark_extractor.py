@@ -133,7 +133,7 @@ class LandmarkExtractor:
         avg_ear = (left_ear + right_ear) / 2.0
         turn_ratio = self._estimate_turn_ratio(raw_landmarks)
         eyes_open = avg_ear > settings.blink_ear_threshold
-        is_frontal = abs(turn_ratio) < 0.1
+        is_frontal = abs(turn_ratio) < settings.frontal_turn_ratio_threshold
 
         return FrameLandmarks(
             left_ear=left_ear,
